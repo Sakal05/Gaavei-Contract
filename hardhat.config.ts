@@ -1,17 +1,29 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
-
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
-  const accounts = await hre.ethers.getSigners();
-
-  for (const account of accounts) {
-    console.log(account.address);
-  }
-});
+require('dotenv').config()
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.17",
+  solidity: {
+    version:  "0.8.17",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
+  },
+  
   paths: { tests: "tests" },
+  networks: {
+    hardhat: {},
+    BNB_TEST: {
+			accounts: [`${process.env.PRIVATE_KEY}`],
+			url: `https://bsc-testnet.nodereal.io/v1/${process.env.NODEREAL_API_KEY}`
+		}
+  },
+  etherscan: {
+		apiKey: `${process.env.BSCSCAN_API_KEY}`
+	}
 };
 
 export default config;

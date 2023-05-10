@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 
 async function main() {
 
-  const nftToken = "0x0bf7e70b88abd4d3c557ad091383415b867e9777";
+  const nftToken = "0xfEdF9a9d7C6ea887a10e045C102b2faDa47B8DcE";
   const rewardToken = "0x0c594e5F8917d39EBfBc5a900eb5b94F17F4141e"
   const GaaveiStaker = await ethers.getContractFactory("GaaveiStaker");
   const gaaveiStaker = await GaaveiStaker.deploy(nftToken, rewardToken);

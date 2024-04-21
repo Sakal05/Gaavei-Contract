@@ -2,10 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "@thirdweb-dev/contracts/base/ERC1155LazyMint.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+// import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract GaaveiDrop is ERC1155LazyMint {
     using Strings for uint256;
+
     struct ClaimRestriction {
         uint256 startTimestamp; // timestamp to start claim
         uint256 maxSupply; // max supply of tokenId
@@ -19,9 +20,7 @@ contract GaaveiDrop is ERC1155LazyMint {
     /// @param claimRestriction the parameters of claim restriction
     /// @param resetClaimEligibility need to reset claim eligibility or not
     event ClaimRestrictionUpdated(
-        uint256 indexed tokenId,
-        ClaimRestriction claimRestriction,
-        bool resetClaimEligibility
+        uint256 indexed tokenId, ClaimRestriction claimRestriction, bool resetClaimEligibility
     );
 
     /// @notice Emitted when tokens are batch claimed via `batchClaim`.
@@ -45,12 +44,9 @@ contract GaaveiDrop is ERC1155LazyMint {
     /// @dev claim restriction's UID => wallet address => supply claimed by this wallet
     mapping(bytes32 => mapping(address => uint256)) private supplyClaimedByWallet;
 
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        address _royaltyRecipient,
-        uint128 _royaltyBps
-    ) ERC1155LazyMint(_name, _symbol, _royaltyRecipient, _royaltyBps) {}
+    constructor(string memory _name, string memory _symbol, address _royaltyRecipient, uint128 _royaltyBps)
+        ERC1155LazyMint(msg.sender, _name, _symbol, _royaltyRecipient, _royaltyBps)
+    {}
 
     /**
      *  @notice          Override this function to add logic for claim verification, based on conditions
@@ -115,7 +111,7 @@ contract GaaveiDrop is ERC1155LazyMint {
         // check if sender send exceed required amount, refund back
         uint256 refundAmount = msg.value - totalPrice;
         if (refundAmount != 0) {
-            (bool refunded, ) = msg.sender.call{ value: refundAmount }("");
+            (bool refunded,) = msg.sender.call{value: refundAmount}("");
             require(refunded, "Failed to refund Ether");
         }
 
@@ -138,11 +134,11 @@ contract GaaveiDrop is ERC1155LazyMint {
      *  @param _ids   The array of tokenId of the lazy minted NFT to mint.
      *  @param _amounts  The array of number of tokens to mint.
      */
-    function batchClaim(
-        address _receiver,
-        uint256[] memory _ids,
-        uint256[] memory _amounts
-    ) public payable nonReentrant {
+    function batchClaim(address _receiver, uint256[] memory _ids, uint256[] memory _amounts)
+        public
+        payable
+        nonReentrant
+    {
         uint256 _maxTokenId = _ids[0];
         for (uint256 i = 0; i < _ids.length; i++) {
             // Add your claim verification logic by overriding this function.
@@ -167,17 +163,16 @@ contract GaaveiDrop is ERC1155LazyMint {
      *  @dev             Override this function to add logic for state updation.
      *                   When overriding, apply any state changes before `_mintBatch`.
      */
-    function _batchTransferTokensOnClaim(
-        address _receiver,
-        uint256[] memory _ids,
-        uint256[] memory _amounts
-    ) internal virtual {
+    function _batchTransferTokensOnClaim(address _receiver, uint256[] memory _ids, uint256[] memory _amounts)
+        internal
+        virtual
+    {
         if (_ids.length != _amounts.length) {
             revert("!ids&amounts");
         }
 
         uint256 totalPrice = 0;
-        for (uint i = 0; i < _ids.length; i++) {
+        for (uint256 i = 0; i < _ids.length; i++) {
             uint256 _tokenId = _ids[i];
             uint256 _quantity = _amounts[i];
 
@@ -201,7 +196,7 @@ contract GaaveiDrop is ERC1155LazyMint {
         // check if sender send exceed required amount, refund back
         uint256 refundAmount = msg.value - totalPrice;
         if (refundAmount != 0) {
-            (bool refunded, ) = msg.sender.call{ value: refundAmount }("");
+            (bool refunded,) = msg.sender.call{value: refundAmount}("");
             require(refunded, "Failed to refund Ether");
         }
 
@@ -209,11 +204,9 @@ contract GaaveiDrop is ERC1155LazyMint {
     }
 
     /// @dev Lets a contract admin set claim restriction.
-    function setClaimRestriction(
-        uint256 _tokenId,
-        ClaimRestriction calldata _restriction,
-        bool _resetClaimEligibility
-    ) external {
+    function setClaimRestriction(uint256 _tokenId, ClaimRestriction calldata _restriction, bool _resetClaimEligibility)
+        external
+    {
         if (!_canSetClaimRestrictions()) {
             revert("Not authorized");
         }
@@ -228,7 +221,7 @@ contract GaaveiDrop is ERC1155LazyMint {
             targetRestrictionId = keccak256(abi.encodePacked(msg.sender, block.number, _tokenId));
         }
 
-        if (supplyClaimed > _restriction.maxSupply) {
+        if (supplyClaimed <= _restriction.maxSupply) {
             revert("MaxSupplyClaimed");
         }
 
@@ -258,7 +251,7 @@ contract GaaveiDrop is ERC1155LazyMint {
         }
         uint256 balance = address(this).balance;
         require(amount <= balance, "!Amount");
-        (bool sent, ) = receiver.call{ value: amount }("");
+        (bool sent,) = receiver.call{value: amount}("");
         require(sent, "Failed to withdraw");
 
         emit Withdrawn(receiver, amount);
